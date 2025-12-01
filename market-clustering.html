@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Clustered User Map - India</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"
+    />
+
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+        background-color: #1a1a1a;
+      }
+      /* Individual dot style (only visible when fully zoomed in/cluster expands) */
+      .user-location-icon {
+        border-radius: 50%;
+        width: 4px;
+        height: 4px;
+        background-color: #ff0000;
+        box-shadow: 0 0 3px #ff0000;
+        margin-left: -2px;
+        margin-top: -2px;
+      }
+      /* Cyan dot for the primary user */
+      .primary-user-icon {
+        width: 10px;
+        height: 10px;
+        background-color: #00ffff;
+        box-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff;
+        margin-left: -5px;
+        margin-top: -5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script
+      type="text/javascript"
+      src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
+    ></script>
+
+    <script type="module">
+      import { data } from "/data.js";
+
+      // === 1. User Location and Constants ===
+      const primaryUserLat = 28.6139; // New Delhi
+      const primaryUserLng = 77.209;
+      const primaryUserLocation = [primaryUserLat, primaryUserLng];
+      const NUMBER_OF_USERS = 3000;
+
+      // === FUNCTION: Generate Random Users within Specific Regions ===
+      function generateRandomUsers(count, regionalBounds) {
+        const users = [];
+        let totalWeight = regionalBounds.reduce(
+          (sum, region) => sum + region.weight,
+          0
+        );
+
+        for (let i = 0; i < count; i++) {
+          let rand = Math.random() * totalWeight;
+          let selectedRegion = null;
+          for (const region of regionalBounds) {
+            if (rand < region.weight) {
+              selectedRegion = region;
+              break;
+            }
+            rand -= region.weight;
+          }
+
+          if (!selectedRegion) continue;
+
+          const lat =
+            Math.random() * (selectedRegion.maxLat - selectedRegion.minLat) +
+            selectedRegion.minLat;
+          const lng =
+            Math.random() * (selectedRegion.maxLng - selectedRegion.minLng) +
+            selectedRegion.minLng;
+
+          users.push([lat, lng]);
+        }
+        return users;
+      }
+
+      // === MAIN ASYNC FUNCTION TO LOAD DATA AND INITIALIZE MAP ===
+      async function initMap() {
+        let regionalBounds;
+        try {
+          // Fetch the JSON data from the external file
+          const response = await fetch("regional-bounds.json");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          regionalBounds = await response.json();
+        } catch (error) {
+          console.error("Could not load regional_bounds.json:", error);
+          alert(
+            "Error loading map data. Ensure regional_bounds.json is in the same directory and you are using a local server."
+          );
+          return;
+        }
+
+        // const otherUsersLocations = generateRandomUsers(
+        //   NUMBER_OF_USERS,
+        //   regionalBounds
+        // );
+        const otherUsersLocations = data;
+
+        // === 2. Initialize the Map ===
+        const map = L.map("map").setView([23.5, 78.5], 5);
+
+        // === 3. Add the Dark Tile Layer ===
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: "abcd",
+            maxZoom: 19,
+          }
+        ).addTo(map);
+
+        // === 4. Initialize Marker Cluster Group ===
+        // This is the core change: create a group to hold all clustered markers.
+        const markers = L.markerClusterGroup({
+          // You can customize cluster icons here if needed
+        });
+
+        // === 5. Create the Custom Icon Definitions ===
+        const generalUserIcon = L.divIcon({
+          className: "user-location-icon",
+          iconSize: [4, 4],
+          iconAnchor: [2, 2],
+        });
+
+        const primaryUserIcon = L.divIcon({
+          className: "user-location-icon primary-user-icon",
+          iconSize: [10, 10],
+          iconAnchor: [5, 5],
+        });
+
+        // === 6. Map the Scattered Users and Add to Cluster Group ===
+        otherUsersLocations.forEach((location) => {
+          // ADD TO MARKER GROUP instead of map
+          markers.addLayer(L.marker(location, { icon: generalUserIcon }));
+        });
+
+        // Add the entire cluster group to the map
+        map.addLayer(markers);
+
+        // === 7. Map the Primary User (Must be added directly to the map to prevent clustering) ===
+        L.marker(primaryUserLocation, { icon: primaryUserIcon })
+          .addTo(map)
+          .bindPopup("You Are Here");
+        //   .openPopup();
+      }
+
+      // Execute the main initialization function
+      initMap();
+    </script>
+  </body>
+</html>

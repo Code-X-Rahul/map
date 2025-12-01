@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dark Map with 1000+ Scattered Users</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <style>
+      #map {
+        height: 100vh; /* Full viewport height */
+        width: 100%;
+        /* Ensure a dark background before tiles load */
+        background-color: #1a1a1a;
+      }
+      /* Custom CSS to style the user's red dot marker */
+      .user-location-icon {
+        /* Make it a circle */
+        border-radius: 50%;
+        /* Set the size - Smaller dots for many users */
+        width: 6px;
+        height: 6px;
+        /* Set the color */
+        background-color: #ff0000; /* Bright Red */
+        /* Add a glow effect for prominence (optional) */
+        box-shadow: 0 0 5px #ff0000;
+        /* Make sure it's centered over the exact location */
+        margin-left: -3px;
+        margin-top: -3px;
+      }
+      /* Optional: Style for the single user's own location */
+      .primary-user-icon {
+        width: 12px;
+        height: 12px;
+        background-color: #00ffff; /* Cyan/Aqua color to stand out */
+        box-shadow: 0 0 10px #00ffff, 0 0 20px #00ffff;
+        margin-left: -6px;
+        margin-top: -6px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script>
+      // === 1. User Location and Constants ===
+      // Your specific user's location (New Delhi)
+      const primaryUserLat = 28.6139;
+      const primaryUserLng = 77.209;
+      const primaryUserLocation = [primaryUserLat, primaryUserLng];
+      const NUMBER_OF_USERS = 1200; // Total users to scatter
+
+      // Boundaries for India (approximate for random generation)
+      const INDIA_BOUNDS = {
+        minLat: 8,
+        maxLat: 35,
+        minLng: 68,
+        maxLng: 98,
+      };
+
+      // === FUNCTION: Generate Random Users ===
+      function generateRandomUsers(count) {
+        const users = [];
+        for (let i = 0; i < count; i++) {
+          // Generate random coordinates within India's bounds
+          const lat =
+            Math.random() * (INDIA_BOUNDS.maxLat - INDIA_BOUNDS.minLat) +
+            INDIA_BOUNDS.minLat;
+          const lng =
+            Math.random() * (INDIA_BOUNDS.maxLng - INDIA_BOUNDS.minLng) +
+            INDIA_BOUNDS.minLng;
+          users.push([lat, lng]);
+        }
+        return users;
+      }
+
+      // Generate the array of user locations
+      const otherUsersLocations = generateRandomUsers(NUMBER_OF_USERS);
+
+      // === 2. Initialize the Map ===
+      // Set view to a wider zoom to see all of India
+      const map = L.map("map").setView([23.5, 78.5], 5);
+
+      // === 3. Add the Dark Tile Layer (The "Night Lights" Look) ===
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 19,
+        }
+      ).addTo(map);
+
+      // === 4. Create the Custom Icon Definitions ===
+
+      // Icon for the scattered, general users (small red dot)
+      const generalUserIcon = L.divIcon({
+        className: "user-location-icon",
+        iconSize: [6, 6],
+        iconAnchor: [3, 3], // Center of the 6x6 dot
+      });
+
+      // Icon for the primary user (larger cyan dot)
+      const primaryUserIcon = L.divIcon({
+        className: "user-location-icon primary-user-icon", // Use both classes
+        iconSize: [12, 12],
+        iconAnchor: [6, 6], // Center of the 12x12 dot
+      });
+
+      // === 5. Map the Scattered Users ===
+      otherUsersLocations.forEach((location, index) => {
+        L.marker(location, { icon: generalUserIcon }).addTo(map);
+      });
+
+      // === 6. Map the Primary User (Your Location) ===
+      L.marker(primaryUserLocation, { icon: primaryUserIcon })
+        .addTo(map)
+        .bindPopup("You Are Here")
+        .openPopup();
+
+      //
+    </script>
+  </body>
+</html>

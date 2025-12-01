@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>India State User Count Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+        background-color: #1a1a1a;
+      }
+
+      .leaflet-container {
+        /* Sets the color of non-map areas (e.g., oceans) to dark */
+        background-color: #1a1a1a !important;
+      }
+
+      /* 🌟 LEGEND STYLING 🌟 */
+      .legend {
+        line-height: 18px;
+        color: #555;
+        background: white; /* White background for visibility */
+        padding: 6px 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+      }
+      .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map">
+      <p style="text-align: center; padding-top: 50px; color: white">
+        Loading map data... If this persists, check console for errors.
+      </p>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script type="text/javascript" src="/leaflet.mask.js"></script>
+
+    <script>
+      // The map object and constants are initialized outside the main logic
+      const map = L.map("map").setView([23.5, 78.5], 4);
+
+      // New grades based on the actual data (max count around 86k)
+      const grades = [0, 5000, 10000, 20000, 40000, 60000];
+
+      // === 1. HELPER FUNCTIONS (Color & Styling) ===
+
+      // Define color gradient based on user count (Choropleth styling)
+      function getColor(d) {
+        // NOTE: The thresholds here MUST match the grades array for the legend.
+        // Shades progress from very pale yellow (low count) to deep amber (high count)
+        return d > 60000
+          ? "#B37C00" // Deep Amber/Brownish Yellow (Highest)
+          : d > 40000
+          ? "#FFC100" // Dark Gold
+          : d > 20000
+          ? "#FFD54F" // Gold
+          : d > 10000
+          ? "#FFEE58" // Bright Yellow
+          : d > 5000
+          ? "#FFF176" // Pale Yellow
+          : d > 0
+          ? "#FFF9C4" // Very Pale Yellow (Lowest count > 0)
+          : "#cccccc"; // Grey for 0 count (or unmapped)
+      }
+      // === 2. MAP INITIALIZATION ===
+
+      function initializeMap() {
+        // Use a dark base layer
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            attribution: "&copy; CARTO",
+            subdomains: "abcd",
+            maxZoom: 19,
+          }
+        ).addTo(map);
+
+        // Hiding the external world by restricting view bounds
+        const indiaBounds = L.latLngBounds(L.latLng(6.5, 68), L.latLng(37, 98));
+        map.setMaxBounds(indiaBounds);
+        map.options.minZoom = 4;
+      }
+
+      // === 3. ADD THE LEGEND CONTROL ===
+      function addLegend() {
+        // Create a custom control
+        const legend = L.control({ position: "bottomright" });
+
+        legend.onAdd = function (map) {
+          // Create the HTML div element for the legend
+          const div = L.DomUtil.create("div", "info legend");
+          const labels = [];
+          let from, to;
+
+          // Loop through our data intervals (grades) and generate a label with a colored square for each
+          for (let i = 0; i < grades.length; i++) {
+            from = grades[i];
+            to = grades[i + 1];
+
+            labels.push(
+              '<i style="background:' +
+                getColor(from + 1) +
+                '"></i> ' +
+                from.toLocaleString() +
+                (to ? "&ndash;" + to.toLocaleString() : "+")
+            );
+          }
+
+          // Add title and join labels
+          div.innerHTML =
+            "<h4>User Count (Choropleth)</h4>" + labels.join("<br>");
+          return div;
+        };
+
+        legend.addTo(map);
+      }
+
+      // === 4. ADD GEOJSON LAYER (Choropleth) ===
+      async function loadGeoJSON(userDataByState) {
+        try {
+          const response = await fetch("states2.geojson");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const geojsonData = await response.json();
+
+          // Apply style to each state polygon
+          function style(feature) {
+            const stateCode =
+              feature.id || feature.properties.NAME_1 || "default";
+            const userCount = userDataByState[stateCode] || 0;
+
+            return {
+              fillColor: getColor(userCount),
+              weight: 1,
+              opacity: 1,
+              color: "black",
+              dashArray: "3",
+              fillOpacity: 0.7,
+            };
+          }
+
+          L.geoJson(geojsonData, {
+            style: style,
+            onEachFeature: function (feature, layer) {
+              const stateCode = feature.id || feature.properties.NAME_1;
+              const stateName = stateCode || "Unknown State";
+              // Check if userCount exists and is not undefined/null, default to 0
+              const userCount = userDataByState[stateCode] || 0;
+
+              layer.bindPopup(
+                "<b>" +
+                  stateName +
+                  "</b><br>Users: " +
+                  userCount.toLocaleString()
+              );
+
+              // Optional: Highlight on hover
+              layer.on({
+                mouseover: function (e) {
+                  e.target.setStyle({
+                    // weight: 2,
+                    dashArray: "",
+                    // fillOpacity: 0.9,
+                  });
+                  e.target.bringToFront();
+                },
+                mouseout: function (e) {
+                  // Reset style on mouseout (only for mouseout to work, you need to use resetStyle)
+                  //   L.geoJson(geojsonData).resetStyle(e.target);
+                },
+              });
+            },
+          }).addTo(map);
+
+          // Add the map mask (assuming the library is loaded)
+          if (L.mask) {
+            L.mask(geojsonData, {
+              fillColor: "#000",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          } else {
+            console.warn("Leaflet.mask library not loaded. Masking skipped.");
+          }
+        } catch (error) {
+          console.error("Error fetching GeoJSON (states2.geojson):", error);
+          alert("Could not load map boundaries. Check console for details.");
+        }
+      }
+
+      // === 5. MAIN EXECUTION (Data Fetch) ===
+
+      async function main() {
+        initializeMap();
+
+        let userDataByState = {};
+        try {
+          const response = await fetch("parsed_data.json");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          // The data structure should be a simple dictionary (object)
+          userDataByState = await response.json();
+
+          addLegend();
+          loadGeoJSON(userDataByState);
+        } catch (error) {
+          console.error("Error fetching user data (parsed_data.json):", error);
+          alert(
+            "Could not load user data from parsed_data.json. Check console for details."
+          );
+          // Still attempt to load the map boundaries with empty data
+          addLegend();
+          loadGeoJSON(userDataByState);
+        }
+      }
+
+      main();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Mumbai/Pune/Kalyan (Highest)",
+    "minLat": 18,
+    "maxLat": 20,
+    "minLng": 72,
+    "maxLng": 74,
+    "weight": 6
+  },
+  {
+    "name": "Delhi/NCR/Chandigarh Corridor (Highest)",
+    "minLat": 27,
+    "maxLat": 30,
+    "minLng": 76,
+    "maxLng": 78,
+    "weight": 6
+  },
+  {
+    "name": "Bengaluru/Chennai/Hyderabad Triangle",
+    "minLat": 12,
+    "maxLat": 14,
+    "minLng": 77,
+    "maxLng": 81,
+    "weight": 5
+  },
+  {
+    "name": "Gujarat/Ahmedabad/Surat",
+    "minLat": 21,
+    "maxLat": 23,
+    "minLng": 70,
+    "maxLng": 74,
+    "weight": 4
+  },
+  {
+    "name": "Kolkata/Howrah/Bihar Border",
+    "minLat": 22,
+    "maxLat": 24,
+    "minLng": 87,
+    "maxLng": 90,
+    "weight": 4
+  },
+  {
+    "name": "Indo-Gangetic Plain (UP/Bihar Central)",
+    "minLat": 24,
+    "maxLat": 28,
+    "minLng": 79,
+    "maxLng": 85,
+    "weight": 3
+  },
+  {
+    "name": "Coastal Andhra/Odisha",
+    "minLat": 16,
+    "maxLat": 20,
+    "minLng": 80,
+    "maxLng": 84,
+    "weight": 2
+  },
+  {
+    "name": "Central India (MP/Chhattisgarh)",
+    "minLat": 20,
+    "maxLat": 24,
+    "minLng": 76,
+    "maxLng": 82,
+    "weight": 2
+  },
+  {
+    "name": "Rajasthan/Punjab Fringe",
+    "minLat": 25,
+    "maxLat": 32,
+    "minLng": 72,
+    "maxLng": 75,
+    "weight": 1
+  },
+  {
+    "name": "Kerala/Coastal South",
+    "minLat": 8,
+    "maxLat": 12,
+    "minLng": 75,
+    "maxLng": 78,
+    "weight": 1
+  }
+]
