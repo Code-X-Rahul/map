@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>India Density Heatmap (in Lakhs)</title>
+    <title>India State User Count Map</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -11,115 +11,235 @@
       integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
       crossorigin=""
     />
-
     <style>
       #map {
-        height: 100vh; /* Full viewport height */
+        height: 100vh;
         width: 100%;
+        background-color: #1a1a1a;
+      }
+
+      .leaflet-container {
+        /* Sets the color of non-map areas (e.g., oceans) to dark */
+        background-color: #1a1a1a !important;
+      }
+
+      /* 🌟 LEGEND STYLING 🌟 */
+      .legend {
+        line-height: 18px;
+        color: #555;
+        background: white; /* White background for visibility */
+        padding: 6px 8px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+      }
+      .legend i {
+        width: 18px;
+        height: 18px;
+        float: left;
+        margin-right: 8px;
+        opacity: 0.7;
       }
     </style>
   </head>
   <body>
-    <div id="map"></div>
+    <div id="map">
+      <p style="text-align: center; padding-top: 50px; color: white">
+        Loading map data... If this persists, check console for errors.
+      </p>
+    </div>
 
     <script
       src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
       integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
       crossorigin=""
     ></script>
-
-    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script type="text/javascript" src="./leaflet.mask.js"></script>
 
     <script>
-      // === 1. Initialize the Map ===
-      const map = L.map("map").setView([23.5, 78.5], 5); // Centered roughly on India, initial zoom 5
+      // The map object and constants are initialized outside the main logic
+      const map = L.map("map").setView([23.5, 78.5], 4);
 
-      // Add an OpenStreetMap tile layer
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 18,
-      }).addTo(map);
+      // New grades based on the actual city data (max count around 50k)
+      const grades = [0, 2500, 7500, 15000, 25000, 40000];
 
-      // === 2. Sample Data for India Density (in Lakhs) ===
-      // Format: [[latitude, longitude, density_value], ...]
-      // The density_value is the "intensity" and should correspond to the 'lakhs' unit.
-      // NOTE: This data is SIMULATED for demonstration. You must replace it with your actual geographic density data.
-      //   const densityDataLakhs = [
-      //     // Major Metropolitan Areas (High Density)
-      //     [28.7041, 77.1025, 10000000], // New Delhi region (~100 lakhs)
-      //     [19.076, 72.8777, 120], // Mumbai region (~120 lakhs)
-      //     [13.0827, 80.2707, 45], // Chennai region (~45 lakhs)
-      //     [22.5726, 88.3639, 60], // Kolkata region (~60 lakhs)
-      //     [12.9716, 77.5946, 70], // Bengaluru region (~70 lakhs)
+      // === 1. HELPER FUNCTIONS (Color & Styling) ===
 
-      //     // Other Major Cities/Regions (Medium Density)
-      //     [17.385, 78.4867, 250000], // Hyderabad region (~25 lakhs)
-      //     [26.8467, 80.9462, 18], // Lucknow region (~18 lakhs)
-      //     [23.0225, 72.5714, 20], // Ahmedabad region (~20 lakhs)
-      //     [30.7333, 76.7794, 11], // Chandigarh region (~11 lakhs)
+      // Define color gradient based on user count (Choropleth styling)
+      function getColor(d) {
+        // NOTE: The thresholds here MUST match the grades array for the legend.
+        // Shades progress from very pale yellow (low count) to deep amber (high count)
+        return d > 40000
+          ? "#B37C00" // Deep Amber/Brownish Yellow (Highest: 40k+)
+          : d > 25000
+          ? "#FFC100" // Dark Gold (25k - 40k)
+          : d > 15000
+          ? "#FFD54F" // Gold (15k - 25k)
+          : d > 7500
+          ? "#FFEE58" // Bright Yellow (7.5k - 15k)
+          : d > 2500
+          ? "#FFF176" // Pale Yellow (2.5k - 7.5k)
+          : d > 0
+          ? "#FFF9C4" // Very Pale Yellow (Lowest count > 0)
+          : "#cccccc"; // Grey for 0 count (or unmapped)
+      }
+      // === 2. MAP INITIALIZATION ===
 
-      //     // Lower Density/Rural Areas (Low Density)
-      //     [26.2389, 73.0243, 5], // Rajasthan region (~5 lakhs)
-      //     [34.0, 76.0, 2], // Ladakh region (~2 lakhs)
-      //     [9.9312, 76.2673, 8], // Kerala coastal region (~8 lakhs)
-      //   ];
+      function initializeMap() {
+        // Use a dark base layer
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+          {
+            attribution: "&copy; CARTO",
+            subdomains: "abcd",
+            maxZoom: 19,
+          }
+        ).addTo(map);
 
-      const densityDataLakhs = [
-        // Tier 1 - Mega Cities
-        [19.076, 72.8777, 125], // Mumbai
-        [28.7041, 77.1025, 105], // Delhi
-        [12.9716, 77.5946, 80], // Bengaluru
-        [22.5726, 88.3639, 65], // Kolkata
-        [13.0827, 80.2707, 55], // Chennai
+        // Hiding the external world by restricting view bounds
+        const indiaBounds = L.latLngBounds(L.latLng(6.5, 68), L.latLng(37, 98));
+        map.setMaxBounds(indiaBounds);
+        map.options.minZoom = 4;
+      }
 
-        // Tier 2 - Major Cities
-        [17.385, 78.4867, 30], // Hyderabad
-        [18.5204, 73.8567, 25], // Pune
-        [23.0225, 72.5714, 22], // Ahmedabad
-        [26.9124, 75.7873, 15], // Jaipur
-        [21.1702, 72.8311, 10], // Surat
+      // === 3. ADD THE LEGEND CONTROL ===
+      function addLegend() {
+        // Create a custom control
+        const legend = L.control({ position: "bottomright" });
 
-        // Tier 3 - Regional Hubs
-        [26.8467, 80.9462, 8], // Lucknow
-        [9.9312, 76.2673, 5], // Kochi
-        [34.0836, 74.7973, 4], // Srinagar
-        [26.1445, 91.7362, 3], // Guwahati
-      ];
-      // === 3. Determine Heatmap Options ===
+        legend.onAdd = function (map) {
+          // Create the HTML div element for the legend
+          const div = L.DomUtil.create("div", "info legend");
+          const labels = [];
+          let from, to;
 
-      // Find the maximum density value in the dataset to normalize the scale.
-      const maxDensityLakhs = densityDataLakhs.reduce(
-        (max, item) => Math.max(max, item[2]),
-        0
-      );
+          // Loop through our data intervals (grades) and generate a label with a colored square for each
+          for (let i = 0; i < grades.length; i++) {
+            from = grades[i];
+            to = grades[i + 1];
 
-      console.log(maxDensityLakhs);
+            labels.push(
+              '<i style="background:' +
+                getColor(from + 1) +
+                '"></i> ' +
+                from.toLocaleString() +
+                (to ? "&ndash;" + to.toLocaleString() : "+")
+            );
+          }
 
-      // Define a color gradient for the heatmap. This maps density (0 to 1) to colors.
-      // We'll use a common gradient: low density (blue/green) -> medium (yellow) -> high (red).
-      // The numbers (0.4, 0.6, 0.8, 1.0) are thresholds where the color changes.
-      const heatmapGradient = {
-        // Lower density (cooler colors)
-        0.0: "blue",
-        0.4: "cyan",
-        0.6: "lime",
-        // Higher density (warmer colors)
-        0.8: "yellow",
-        1.0: "red",
-      };
+          // Add title and join labels
+          div.innerHTML =
+            "<h4>User Count (Choropleth)</h4>" + labels.join("<br>");
+          return div;
+        };
 
-      // === 4. Create and Add the Heatmap Layer ===
-      // The 'max' option should be set to the maximum density value (in lakhs)
-      // so that the colors in the 'gradient' are scaled correctly from 0 up to this max value.
-      const heatLayer = L.heatLayer(densityDataLakhs, {
-        radius: 40, // The size of the blur circle for each point (in pixels). Adjust this to fine-tune the visualization.
-        blur: 15, // The amount of blurriness.
-        max: maxDensityLakhs, // The highest density value in your data (e.g., 120 lakhs). This sets the max color for the gradient.
-        gradient: heatmapGradient,
-      }).addTo(map);
+        legend.addTo(map);
+      }
 
-      //
+      // === 4. ADD GEOJSON LAYER (Choropleth) ===
+      async function loadGeoJSON(userDataByState) {
+        try {
+          const response = await fetch("indian-cities.geojson");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const geojsonData = await response.json();
+
+          // Apply style to each state polygon
+          function style(feature) {
+            const stateCode =
+              feature.id || feature.properties.name || "default";
+            const userCount = userDataByState[stateCode] || 0;
+
+            return {
+              fillColor: getColor(userCount),
+              weight: 1,
+              opacity: 1,
+              color: "black",
+              dashArray: "3",
+              fillOpacity: 0.7,
+            };
+          }
+
+          L.geoJson(geojsonData, {
+            style: style,
+            onEachFeature: function (feature, layer) {
+              const stateCode = feature.id || feature.properties.name;
+              const stateName = stateCode || "Unknown State";
+              // Check if userCount exists and is not undefined/null, default to 0
+              const userCount = userDataByState[stateCode] || 0;
+
+              layer.bindPopup(
+                "<b>" +
+                  stateName +
+                  "</b><br>Users: " +
+                  userCount.toLocaleString()
+              );
+
+              // Optional: Highlight on hover
+              layer.on({
+                mouseover: function (e) {
+                  e.target.setStyle({
+                    // weight: 2,
+                    dashArray: "",
+                    // fillOpacity: 0.9,
+                  });
+                  e.target.bringToFront();
+                },
+                mouseout: function (e) {
+                  // Reset style on mouseout (only for mouseout to work, you need to use resetStyle)
+                  //   L.geoJson(geojsonData).resetStyle(e.target);
+                },
+              });
+            },
+          }).addTo(map);
+
+          // Add the map mask (assuming the library is loaded)
+          if (L.mask) {
+            L.mask(geojsonData, {
+              fillColor: "#000",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          } else {
+            console.warn("Leaflet.mask library not loaded. Masking skipped.");
+          }
+        } catch (error) {
+          console.error("Error fetching GeoJSON (states2.geojson):", error);
+          alert("Could not load map boundaries. Check console for details.");
+        }
+      }
+
+      // === 5. MAIN EXECUTION (Data Fetch) ===
+
+      async function main() {
+        initializeMap();
+
+        let userDataByState = {};
+        try {
+          const response = await fetch("parsed_city_counts_normalized.json");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          // The data structure should be a simple dictionary (object)
+          userDataByState = await response.json();
+
+          addLegend();
+          loadGeoJSON(userDataByState);
+        } catch (error) {
+          console.error("Error fetching user data (parsed_data.json):", error);
+          alert(
+            "Could not load user data from parsed_data.json. Check console for details."
+          );
+          // Still attempt to load the map boundaries with empty data
+          addLegend();
+          loadGeoJSON(userDataByState);
+        }
+      }
+
+      main();
     </script>
   </body>
 </html>

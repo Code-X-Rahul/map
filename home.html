@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>India Density Heatmap (in Lakhs)</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+
+    <style>
+      #map {
+        height: 100vh; /* Full viewport height */
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script>
+      // === 1. Initialize the Map ===
+      const map = L.map("map").setView([23.5, 78.5], 5); // Centered roughly on India, initial zoom 5
+
+      // Add an OpenStreetMap tile layer
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 18,
+      }).addTo(map);
+
+      // === 2. Sample Data for India Density (in Lakhs) ===
+      // Format: [[latitude, longitude, density_value], ...]
+      // The density_value is the "intensity" and should correspond to the 'lakhs' unit.
+      // NOTE: This data is SIMULATED for demonstration. You must replace it with your actual geographic density data.
+      //   const densityDataLakhs = [
+      //     // Major Metropolitan Areas (High Density)
+      //     [28.7041, 77.1025, 10000000], // New Delhi region (~100 lakhs)
+      //     [19.076, 72.8777, 120], // Mumbai region (~120 lakhs)
+      //     [13.0827, 80.2707, 45], // Chennai region (~45 lakhs)
+      //     [22.5726, 88.3639, 60], // Kolkata region (~60 lakhs)
+      //     [12.9716, 77.5946, 70], // Bengaluru region (~70 lakhs)
+
+      //     // Other Major Cities/Regions (Medium Density)
+      //     [17.385, 78.4867, 250000], // Hyderabad region (~25 lakhs)
+      //     [26.8467, 80.9462, 18], // Lucknow region (~18 lakhs)
+      //     [23.0225, 72.5714, 20], // Ahmedabad region (~20 lakhs)
+      //     [30.7333, 76.7794, 11], // Chandigarh region (~11 lakhs)
+
+      //     // Lower Density/Rural Areas (Low Density)
+      //     [26.2389, 73.0243, 5], // Rajasthan region (~5 lakhs)
+      //     [34.0, 76.0, 2], // Ladakh region (~2 lakhs)
+      //     [9.9312, 76.2673, 8], // Kerala coastal region (~8 lakhs)
+      //   ];
+
+      const densityDataLakhs = [
+        // Tier 1 - Mega Cities
+        [19.076, 72.8777, 125], // Mumbai
+        [28.7041, 77.1025, 105], // Delhi
+        [12.9716, 77.5946, 80], // Bengaluru
+        [22.5726, 88.3639, 65], // Kolkata
+        [13.0827, 80.2707, 55], // Chennai
+
+        // Tier 2 - Major Cities
+        [17.385, 78.4867, 30], // Hyderabad
+        [18.5204, 73.8567, 25], // Pune
+        [23.0225, 72.5714, 22], // Ahmedabad
+        [26.9124, 75.7873, 15], // Jaipur
+        [21.1702, 72.8311, 10], // Surat
+
+        // Tier 3 - Regional Hubs
+        [26.8467, 80.9462, 8], // Lucknow
+        [9.9312, 76.2673, 5], // Kochi
+        [34.0836, 74.7973, 4], // Srinagar
+        [26.1445, 91.7362, 3], // Guwahati
+      ];
+      // === 3. Determine Heatmap Options ===
+
+      // Find the maximum density value in the dataset to normalize the scale.
+      const maxDensityLakhs = densityDataLakhs.reduce(
+        (max, item) => Math.max(max, item[2]),
+        0
+      );
+
+      console.log(maxDensityLakhs);
+
+      // Define a color gradient for the heatmap. This maps density (0 to 1) to colors.
+      // We'll use a common gradient: low density (blue/green) -> medium (yellow) -> high (red).
+      // The numbers (0.4, 0.6, 0.8, 1.0) are thresholds where the color changes.
+      const heatmapGradient = {
+        // Lower density (cooler colors)
+        0.0: "blue",
+        0.4: "cyan",
+        0.6: "lime",
+        // Higher density (warmer colors)
+        0.8: "yellow",
+        1.0: "red",
+      };
+
+      // === 4. Create and Add the Heatmap Layer ===
+      // The 'max' option should be set to the maximum density value (in lakhs)
+      // so that the colors in the 'gradient' are scaled correctly from 0 up to this max value.
+      const heatLayer = L.heatLayer(densityDataLakhs, {
+        radius: 40, // The size of the blur circle for each point (in pixels). Adjust this to fine-tune the visualization.
+        blur: 15, // The amount of blurriness.
+        max: maxDensityLakhs, // The highest density value in your data (e.g., 120 lakhs). This sets the max color for the gradient.
+        gradient: heatmapGradient,
+      }).addTo(map);
+
+      //
+    </script>
+  </body>
+</html>
