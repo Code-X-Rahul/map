@@ -64,46 +64,59 @@
       src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"
     ></script>
 
-    <script type="module">
-      import { data } from "/data.js";
+    <script type="text/javascript" src="/leaflet.mask.js"></script>
 
-      // === 1. User Location and Constants ===
-      const primaryUserLat = 28.6139; // New Delhi
-      const primaryUserLng = 77.209;
-      const primaryUserLocation = [primaryUserLat, primaryUserLng];
-      const NUMBER_OF_USERS = 3000;
-
-      // === FUNCTION: Generate Random Users within Specific Regions ===
-      function generateRandomUsers(count, regionalBounds) {
-        const users = [];
-        let totalWeight = regionalBounds.reduce(
-          (sum, region) => sum + region.weight,
-          0
-        );
-
-        for (let i = 0; i < count; i++) {
-          let rand = Math.random() * totalWeight;
-          let selectedRegion = null;
-          for (const region of regionalBounds) {
-            if (rand < region.weight) {
-              selectedRegion = region;
-              break;
-            }
-            rand -= region.weight;
+    <script>
+      async function loadData() {
+        try {
+          const response = await fetch("parsed_coordinates.json");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
           }
+          const coordinateData = await response.json();
 
-          if (!selectedRegion) continue;
-
-          const lat =
-            Math.random() * (selectedRegion.maxLat - selectedRegion.minLat) +
-            selectedRegion.minLat;
-          const lng =
-            Math.random() * (selectedRegion.maxLng - selectedRegion.minLng) +
-            selectedRegion.minLng;
-
-          users.push([lat, lng]);
+          if (coordinateData.length === 0) {
+            console.warn("Coordinate data is empty. Cannot draw coordinates.");
+            return [];
+          }
+          return coordinateData;
+        } catch (error) {
+          console.error(
+            "Error fetching coordinate data (parsed_coordinates.json):",
+            error
+          );
+          alert(
+            "Could not load coordinate data for map. Check console for details."
+          );
+          return [];
         }
-        return users;
+      }
+
+      async function loadGeoJSON(map) {
+        try {
+          const response = await fetch("states2.geojson");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const geojsonData = await response.json();
+
+          // Add the map mask (assuming the library is loaded)
+          if (L.mask) {
+            L.mask(geojsonData, {
+              fillColor: "#000",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          } else {
+            console.warn("Leaflet.mask library not loaded. Masking skipped.");
+          }
+        } catch (error) {
+          console.error("Error fetching GeoJSON (states2.geojson):", error);
+          alert("Could not load map boundaries. Check console for details.");
+        }
       }
 
       // === MAIN ASYNC FUNCTION TO LOAD DATA AND INITIALIZE MAP ===
@@ -124,11 +137,7 @@
           return;
         }
 
-        // const otherUsersLocations = generateRandomUsers(
-        //   NUMBER_OF_USERS,
-        //   regionalBounds
-        // );
-        const otherUsersLocations = data;
+        const otherUsersLocations = await loadData();
 
         // === 2. Initialize the Map ===
         const map = L.map("map").setView([23.5, 78.5], 5);
@@ -157,12 +166,6 @@
           iconAnchor: [2, 2],
         });
 
-        const primaryUserIcon = L.divIcon({
-          className: "user-location-icon primary-user-icon",
-          iconSize: [10, 10],
-          iconAnchor: [5, 5],
-        });
-
         // === 6. Map the Scattered Users and Add to Cluster Group ===
         otherUsersLocations.forEach((location) => {
           // ADD TO MARKER GROUP instead of map
@@ -172,11 +175,7 @@
         // Add the entire cluster group to the map
         map.addLayer(markers);
 
-        // === 7. Map the Primary User (Must be added directly to the map to prevent clustering) ===
-        L.marker(primaryUserLocation, { icon: primaryUserIcon })
-          .addTo(map)
-          .bindPopup("You Are Here");
-        //   .openPopup();
+        loadGeoJSON(map);
       }
 
       // Execute the main initialization function
