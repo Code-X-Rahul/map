@@ -67,7 +67,7 @@
 
       async function loadStateBorders() {
         try {
-          const response = await fetch("states2.geojson");
+          const response = await fetch("in.geojson");
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -77,7 +77,7 @@
             style: {
               fill: false, // No fill
               weight: 1,
-              opacity: 0.8,
+              opacity: 0.5,
               color: "#999999", // Light grey border
             },
             interactive: false,
@@ -89,46 +89,280 @@
 
       // === 3. ADD HEATMAP LAYER (City Coordinates) ===
 
-      async function loadHeatmap() {
+      // async function loadHeatmap() {
+      //   try {
+      //     //coordinates data with 1 intensity for every latlng
+
+      //     // const response = await fetch("parsed_events_1_7DEC.json");
+      //     // const response = await fetch("parsed_events_2dec.json");
+      //     const response = await fetch(
+      //       "parsed_events_dec2_615am_715am_ist.json"
+      //     );
+
+      //     //heatmap data
+
+      //     // const response = await fetch("heatmap_data.json");
+      //     // const response = await fetch("heatmap_data-2-dec.json");
+      //     // const response = await fetch("parsed_coordinates.json");
+      //     if (!response.ok) {
+      //       throw new Error(`HTTP error! status: ${response.status}`);
+      //     }
+      //     const coordinateData = await response.json();
+
+      //     if (coordinateData.length === 0) {
+      //       console.warn("Coordinate data is empty. Cannot draw heatmap.");
+      //       return;
+      //     }
+
+      //     // Convert list of [lat, lon] to Heatmap Layer
+      //     L.heatLayer(coordinateData, {
+      //       radius: 25,
+      //       blur: 30,
+      //       maxZoom: 1,
+      //       // 🌟 Updated Gradient for Yellow/Gold Shades 🌟
+      //       // gradient: {
+      //       //   0.0: "#FFFACD", // Very Light Yellow (Low Density)
+      //       //   0.3: "#FFD700", // Gold
+      //       //   0.6: "#FFC400", // Darker Gold
+      //       //   1.0: "#B8860B", // Deep Amber (High Density)
+      //       // },
+      //       gradient: {
+      //         0.0: "rgba(255, 255, 190, 1)", // Fully transparent start
+      //         0.25: "rgba(255, 255, 150, 1)", // Very faint LightYellow (for the low counts)
+      //         0.5: "#FFD700", // Gold
+      //         0.75: "#FFC400", // Darker Gold
+      //         1.0: "#FF8C00", // Dark Orange (for the intense peaks like Mumbai)
+      //       },
+      //     }).addTo(map);
+      //   } catch (error) {
+      //     console.error(
+      //       "Error fetching coordinate data (parsed_coordinates.json):",
+      //       error
+      //     );
+      //     alert(
+      //       "Could not load coordinate data for heatmap. Check console for details."
+      //     );
+      //   }
+      // }
+
+      // async function loadLayeredHeatmap() {
+      //   const response = await fetch("heatmap_buckets_stepped.json");
+      //   const buckets = await response.json();
+
+      //   // 1. Smallest (1-50) -> Faint Yellow, Small Radius (8)
+      //   L.heatLayer(buckets.bucket1, {
+      //     radius: 8,
+      //     blur: 5,
+      //     maxZoom: 1,
+      //     gradient: { 0.0: "transparent", 0.5: "#FFFFE0", 1.0: "#FFFACD" }, // LemonChiffon
+      //   }).addTo(map);
+
+      //   // 2. Medium-Small (51-500) -> Bright Yellow, Medium Radius (14)
+      //   L.heatLayer(buckets.bucket2, {
+      //     radius: 14,
+      //     blur: 10,
+      //     maxZoom: 1,
+      //     gradient: { 0.0: "transparent", 0.5: "#FFFF00", 1.0: "#FFD700" }, // Yellow -> Gold
+      //   }).addTo(map);
+
+      //   // 3. Medium-Large (501-2500) -> Deep Gold, Large Radius (22)
+      //   L.heatLayer(buckets.bucket3, {
+      //     radius: 22,
+      //     blur: 15,
+      //     maxZoom: 1,
+      //     gradient: { 0.0: "transparent", 0.5: "#FFD700", 1.0: "#FFA500" }, // Gold -> Orange
+      //   }).addTo(map);
+
+      //   // 4. Largest (2501+) -> Orange-Red, Huge Radius (35)
+      //   L.heatLayer(buckets.bucket4, {
+      //     radius: 35,
+      //     blur: 25,
+      //     maxZoom: 1,
+      //     gradient: { 0.0: "transparent", 0.4: "#FF8C00", 1.0: "#FF4500" }, // DarkOrange -> RedOrange
+      //   }).addTo(map);
+      // }
+
+      // async function loadLayeredHeatmap() {
+      //   try {
+      //     const response = await fetch("heatmap_buckets_stepped.json");
+      //     if (!response.ok) throw new Error("Failed to load buckets");
+      //     const buckets = await response.json();
+
+      //     // === Bucket 1: 1-50 (Very Light / Cream Yellow) ===
+      //     L.heatLayer(buckets.bucket1, {
+      //       radius: 8,
+      //       blur: 5,
+      //       maxZoom: 1,
+      //       gradient: {
+      //         0.0: "transparent",
+      //         0.5: "rgba(255, 255, 240, 0.4)", // Ivory (Very faint)
+      //         1.0: "#FFFFE0", // LightYellow
+      //       },
+      //     }).addTo(map);
+
+      //     // === Bucket 2: 51-500 (Soft Pastel Yellow) ===
+      //     L.heatLayer(buckets.bucket2, {
+      //       radius: 14,
+      //       blur: 10,
+      //       maxZoom: 1,
+      //       gradient: {
+      //         0.0: "transparent",
+      //         0.5: "rgba(255, 255, 150, 0.6)",
+      //         1.0: "#FFFACD", // LemonChiffon
+      //       },
+      //     }).addTo(map);
+
+      //     // === Bucket 3: 501-2500 (Standard Bright Yellow) ===
+      //     L.heatLayer(buckets.bucket3, {
+      //       radius: 22,
+      //       blur: 15,
+      //       maxZoom: 1,
+      //       gradient: {
+      //         0.0: "transparent",
+      //         0.5: "rgba(255, 255, 100, 0.8)",
+      //         1.0: "#FFFF00", // Pure Yellow
+      //       },
+      //     }).addTo(map);
+
+      //     // === Bucket 4: 2501+ (Dark/Deep Yellow) ===
+      //     L.heatLayer(buckets.bucket4, {
+      //       radius: 35,
+      //       blur: 25,
+      //       maxZoom: 1,
+      //       gradient: {
+      //         0.0: "transparent",
+      //         0.4: "rgba(255, 235, 59, 0.9)",
+      //         1.0: "#FFD700", // Gold (The darkest yellow before orange)
+      //       },
+      //     }).addTo(map);
+      //   } catch (error) {
+      //     console.error("Error loading heatmap buckets:", error);
+      //   }
+      // }
+
+      let heatLayers = {
+        b1: null,
+        b2: null,
+        b3: null,
+        b4: null,
+      };
+      async function loadLayeredHeatmap() {
         try {
-          const response = await fetch("parsed_coordinates.json");
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-          const coordinateData = await response.json();
+          // const response = await fetch("heatmap_buckets_stepped.json");
+          // const response = await fetch("heatmap_buckets_stepped_2dec.json");
+          const response = await fetch(
+            "heatmap_buckets_stepped_dec2_615am_715am_ist.json"
+          );
 
-          if (coordinateData.length === 0) {
-            console.warn("Coordinate data is empty. Cannot draw heatmap.");
-            return;
-          }
+          if (!response.ok) throw new Error("Failed to load buckets");
+          const buckets = await response.json();
 
-          // Convert list of [lat, lon] to Heatmap Layer
-          L.heatLayer(coordinateData, {
-            radius: 15,
-            blur: 20,
-            maxZoom: 1,
-            // 🌟 Updated Gradient for Yellow/Gold Shades 🌟
-            gradient: {
-              0.0: "#FFFACD", // Very Light Yellow (Low Density)
-              0.3: "#FFD700", // Gold
-              0.6: "#FFC400", // Darker Gold
-              1.0: "#B8860B", // Deep Amber (High Density)
+          // === Define Base Settings (for Zoom Level 10+) ===
+          // We will scale these down when zoomed out
+          const config = {
+            b1: {
+              radius: 8,
+              grad: {
+                0.0: "#ffff82",
+                0.25: "#ffff82",
+                // 0.5: "#FFFFE0",
+                // 1.0: "#FFFFE0",
+              },
             },
+            b2: {
+              radius: 14,
+              grad: {
+                // 0.0: "#FFFACD",
+                0.5: "#fcfc51",
+                // 1.0: "#FFFACD",
+              },
+            },
+            b3: {
+              radius: 22,
+              grad: {
+                0.75: "#FFFF00",
+              },
+            },
+            b4: {
+              radius: 35,
+              grad: {
+                1.0: "#FFD700",
+              },
+            },
+          };
+
+          // === Create Layers ===
+          // 1-50
+          heatLayers.b1 = L.heatLayer(buckets.bucket1, {
+            radius: config.b1.radius,
+            blur: 5,
+            maxZoom: 1,
+            gradient: config.b1.grad,
           }).addTo(map);
+
+          // 51-500
+          heatLayers.b2 = L.heatLayer(buckets.bucket2, {
+            radius: config.b2.radius,
+            blur: 10,
+            maxZoom: 1,
+            gradient: config.b2.grad,
+          }).addTo(map);
+
+          // 501-2500
+          heatLayers.b3 = L.heatLayer(buckets.bucket3, {
+            radius: config.b3.radius,
+            blur: 15,
+            maxZoom: 1,
+            gradient: config.b3.grad,
+          }).addTo(map);
+
+          // 2501+
+          heatLayers.b4 = L.heatLayer(buckets.bucket4, {
+            radius: config.b4.radius,
+            blur: 25,
+            maxZoom: 1,
+            gradient: config.b4.grad,
+          }).addTo(map);
+
+          // === Dynamic Zoom Handler ===
+          function updateHeatmapRadius() {
+            const currentZoom = map.getZoom();
+            let scale = 1;
+
+            // Adjust scale based on zoom level
+            if (currentZoom <= 4)
+              scale = 0.2; // Way zoomed out (India view) -> 20% size
+            else if (currentZoom === 5) scale = 0.5; // State view -> 40% size
+            else if (currentZoom <= 7) scale = 0.7; // Regional view -> 60% size
+            else if (currentZoom <= 9) scale = 0.9; // Near City -> 80% size
+            else scale = 1.0; // City/Street -> 100% size
+
+            // Apply new radius to all layers
+            if (heatLayers.b1)
+              heatLayers.b1.setOptions({ radius: config.b1.radius * scale });
+            if (heatLayers.b2)
+              heatLayers.b2.setOptions({ radius: config.b2.radius * scale });
+            if (heatLayers.b3)
+              heatLayers.b3.setOptions({ radius: config.b3.radius * scale });
+            if (heatLayers.b4)
+              heatLayers.b4.setOptions({ radius: config.b4.radius * scale });
+
+            console.log(`Zoom: ${currentZoom}, Scale: ${scale}`);
+          }
+
+          // Attach listener
+          map.on("zoomend", updateHeatmapRadius);
+
+          // Run once immediately to set correct size for start zoom
+          updateHeatmapRadius();
         } catch (error) {
-          console.error(
-            "Error fetching coordinate data (parsed_coordinates.json):",
-            error
-          );
-          alert(
-            "Could not load coordinate data for heatmap. Check console for details."
-          );
+          console.error("Error loading heatmap buckets:", error);
         }
       }
-
       async function maskMap() {
         try {
-          const response = await fetch("states2.geojson");
+          // const response = await fetch("states2.geojson");
+          const response = await fetch("in.geojson");
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -158,7 +392,8 @@
       function main() {
         initializeMap();
         loadStateBorders();
-        loadHeatmap();
+        // loadHeatmap();
+        loadLayeredHeatmap();
         maskMap();
       }
 
