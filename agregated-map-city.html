@@ -15,12 +15,12 @@
       #map {
         height: 100vh;
         width: 100%;
-        background-color: #1a1a1a;
+        background-color: #fff;
       }
 
       .leaflet-container {
         /* Sets the color of non-map areas (e.g., oceans) to dark */
-        background-color: #1a1a1a !important;
+        background-color: #fff !important;
       }
     </style>
   </head>
@@ -48,15 +48,20 @@
 
       function initializeMap() {
         // Use a dark base layer
-        L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-          {
-            attribution: "&copy; CARTO",
-            subdomains: "abcd",
-            maxZoom: 19,
-          }
-        ).addTo(map);
+        // L.tileLayer(
+        //   "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        //   {
+        //     attribution: "&copy; CARTO",
+        //     subdomains: "abcd",
+        //     maxZoom: 19,
+        //   }
+        // ).addTo(map);
 
+        L.tileLayer("", {
+          attribution: "Plain White Map",
+          maxZoom: 19,
+          minZoom: 0,
+        }).addTo(map);
         // Restrict view bounds (India)
         const indiaBounds = L.latLngBounds(L.latLng(6.5, 68), L.latLng(37, 98));
         map.setMaxBounds(indiaBounds);
@@ -250,9 +255,7 @@
         try {
           // const response = await fetch("heatmap_buckets_stepped.json");
           // const response = await fetch("heatmap_buckets_stepped_2dec.json");
-          const response = await fetch(
-            "heatmap_buckets_stepped_dec2_615am_715am_ist.json"
-          );
+          const response = await fetch("demo2.json");
 
           if (!response.ok) throw new Error("Failed to load buckets");
           const buckets = await response.json();
@@ -261,32 +264,36 @@
           // We will scale these down when zoomed out
           const config = {
             b1: {
-              radius: 8,
+              radius: 55,
               grad: {
-                0.0: "#ffff82",
-                0.25: "#ffff82",
-                // 0.5: "#FFFFE0",
-                // 1.0: "#FFFFE0",
+                0.6: "#0ea5e9",
+                1: "#0ea5e9",
               },
             },
             b2: {
-              radius: 14,
+              radius: 55,
               grad: {
-                // 0.0: "#FFFACD",
-                0.5: "#fcfc51",
-                // 1.0: "#FFFACD",
+                0.8: "#0ea5e9",
               },
             },
             b3: {
-              radius: 22,
+              radius: 55,
               grad: {
-                0.75: "#FFFF00",
+                0.8: "#0ea5e9",
+                1: "#0ea5e9",
               },
             },
             b4: {
-              radius: 35,
+              radius: 55,
               grad: {
-                1.0: "#FFD700",
+                0.8: "#0ea5e9",
+                1: "#0ea5e9",
+              },
+            },
+            b5: {
+              radius: 55,
+              grad: {
+                1.0: "#075985",
               },
             },
           };
@@ -339,13 +346,30 @@
 
             // Apply new radius to all layers
             if (heatLayers.b1)
-              heatLayers.b1.setOptions({ radius: config.b1.radius * scale });
+              heatLayers.b1.setOptions({
+                radius: config.b1.radius * scale,
+                blur: 25,
+              });
             if (heatLayers.b2)
-              heatLayers.b2.setOptions({ radius: config.b2.radius * scale });
+              heatLayers.b2.setOptions({
+                radius: config.b2.radius * scale,
+                blur: 25,
+              });
             if (heatLayers.b3)
-              heatLayers.b3.setOptions({ radius: config.b3.radius * scale });
+              heatLayers.b3.setOptions({
+                radius: config.b3.radius * scale,
+                blur: 25,
+              });
             if (heatLayers.b4)
-              heatLayers.b4.setOptions({ radius: config.b4.radius * scale });
+              heatLayers.b4.setOptions({
+                radius: config.b4.radius * scale,
+                blur: 25,
+              });
+            if (heatLayers.b5)
+              heatLayers.b5.setOptions({
+                radius: config.b5.radius * scale,
+                blur: 25,
+              });
 
             console.log(`Zoom: ${currentZoom}, Scale: ${scale}`);
           }
@@ -370,7 +394,7 @@
 
           if (L.mask) {
             L.mask(geojsonData, {
-              fillColor: "#000",
+              fillColor: "#cedcde",
               fillOpacity: 1,
               stroke: false,
               interactive: false,

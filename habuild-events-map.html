@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>India City User Density Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      #map {
+        height: 100vh;
+        width: 100%;
+        background-color: #fffadb;
+      }
+
+      .leaflet-container {
+        /* Sets the color of non-map areas (e.g., oceans) to dark */
+        background: #fffadb;
+        /* background: -webkit-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(42, 123, 155, 1) 100%
+        );
+        background: -moz-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(42, 123, 155, 1) 100%
+        );
+        background: linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 1) 0%,
+          rgba(42, 123, 155, 1) 100%
+        ); */
+        /* filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#FFFFFF", endColorstr="#2A7B9B", GradientType=1); */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map">
+      <p style="text-align: center; padding-top: 50px; color: white">
+        Loading map data... If this persists, check console for errors.
+      </p>
+    </div>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+    <script type="text/javascript" src="./leaflet.mask.js"></script>
+
+    <!-- <script>
+      const map = L.map("map").setView([23.5, 78.5], 5);
+
+      // === 1. MAP INITIALIZATION ===
+
+      function initializeMap() {
+        // Use a dark base layer
+        // L.tileLayer(
+        //   "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        //   {
+        //     attribution: "&copy; CARTO",
+        //     subdomains: "abcd",
+        //     maxZoom: 19,
+        //   }
+        // ).addTo(map);
+
+        // L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        //   attribution:
+        //     '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        // }).addTo(map);
+        L.tileLayer("", {
+          attribution: "Plain White Map", // Optional attribution
+          maxZoom: 19,
+          minZoom: 0,
+        }).addTo(map);
+        // Restrict view bounds (India)
+        const indiaBounds = L.latLngBounds(L.latLng(6.5, 68), L.latLng(37, 98));
+        map.setMaxBounds(indiaBounds);
+        map.options.minZoom = 4;
+      }
+
+      // === 2. ADD GEOJSON LAYER (State Borders for Context) ===
+
+      async function loadStateBorders() {
+        try {
+          const response = await fetch("in.geojson");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const geojsonData = await response.json();
+
+          L.geoJson(geojsonData, {
+            style: {
+              fill: false, // No fill
+              weight: 1,
+              opacity: 0.5,
+              color: "#999999", // Light grey border
+            },
+            interactive: false,
+          }).addTo(map);
+        } catch (error) {
+          console.error("Error fetching GeoJSON (states2.geojson):", error);
+        }
+      }
+
+      let heatLayers = {
+        b1: null,
+        b2: null,
+        b3: null,
+        b4: null,
+        b5: null,
+      };
+      async function loadLayeredHeatmap() {
+        try {
+          const response = await fetch(
+            "heatmap_buckets_stepped_dec2_615am_715am_ist2.json"
+          );
+
+          if (!response.ok) throw new Error("Failed to load buckets");
+          const buckets = await response.json();
+
+          // === Define Base Settings (for Zoom Level 10+) ===
+          // We will scale these down when zoomed out
+          const config = {
+            b1: {
+              radius: 20,
+              grad: {
+                0.0: "#92ebfb",
+                0.2: "#92ebfb",
+              },
+            },
+            b2: {
+              radius: 20,
+              grad: {
+                0.4: "#7dd3fc",
+              },
+            },
+            b3: {
+              radius: 20,
+              grad: {
+                0.6: "#0ea5e9",
+              },
+            },
+            b4: {
+              radius: 20,
+              grad: {
+                0.8: "#075985",
+              },
+            },
+            b5: {
+              radius: 20,
+              grad: {
+                1.0: "#082f49",
+              },
+            },
+          };
+
+          // === Create Layers ===
+          // 1-50
+          heatLayers.b1 = L.heatLayer(buckets.bucket1, {
+            radius: config.b1.radius,
+            blur: 0,
+            maxZoom: 1,
+            gradient: config.b1.grad,
+          }).addTo(map);
+
+          // 51-500
+          heatLayers.b2 = L.heatLayer(buckets.bucket2, {
+            radius: config.b2.radius,
+            blur: 0,
+            maxZoom: 1,
+            gradient: config.b2.grad,
+          }).addTo(map);
+
+          // 501-2500
+          heatLayers.b3 = L.heatLayer(buckets.bucket3, {
+            radius: config.b3.radius,
+            blur: 0,
+            maxZoom: 1,
+            gradient: config.b3.grad,
+          }).addTo(map);
+
+          // 2501+
+          heatLayers.b4 = L.heatLayer(buckets.bucket4, {
+            radius: config.b4.radius,
+            blur: 0,
+            maxZoom: 1,
+            gradient: config.b4.grad,
+          }).addTo(map);
+          heatLayers.b5 = L.heatLayer(buckets.bucket5, {
+            radius: config.b5.radius,
+            blur: 0,
+            maxZoom: 1,
+            gradient: config.b5.grad,
+          }).addTo(map);
+
+          // === Dynamic Zoom Handler ===
+          function updateHeatmapRadius() {
+            const currentZoom = map.getZoom();
+            let scale = 1;
+
+            // Adjust scale based on zoom level
+            if (currentZoom <= 4)
+              scale = 0.2; // Way zoomed out (India view) -> 20% size
+            else if (currentZoom === 5) scale = 0.5; // State view -> 40% size
+            else if (currentZoom <= 7) scale = 0.7; // Regional view -> 60% size
+            else if (currentZoom <= 9) scale = 0.9; // Near City -> 80% size
+            else scale = 1.0; // City/Street -> 100% size
+
+            // Apply new radius to all layers
+            if (heatLayers.b1)
+              heatLayers.b1.setOptions({ radius: config.b1.radius * scale });
+            if (heatLayers.b2)
+              heatLayers.b2.setOptions({ radius: config.b2.radius * scale });
+            if (heatLayers.b3)
+              heatLayers.b3.setOptions({ radius: config.b3.radius * scale });
+            if (heatLayers.b4)
+              heatLayers.b4.setOptions({ radius: config.b4.radius * scale });
+            if (heatLayers.b5)
+              heatLayers.b4.setOptions({ radius: config.b5.radius * scale });
+
+            console.log(`Zoom: ${currentZoom}, Scale: ${scale}`);
+          }
+
+          // Attach listener
+          map.on("zoomend", updateHeatmapRadius);
+
+          // Run once immediately to set correct size for start zoom
+          updateHeatmapRadius();
+        } catch (error) {
+          console.error("Error loading heatmap buckets:", error);
+        }
+      }
+      async function maskMap() {
+        try {
+          // const response = await fetch("states2.geojson");
+          const response = await fetch("in.geojson");
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const geojsonData = await response.json();
+
+          if (L.mask) {
+            L.mask(geojsonData, {
+              //   color:
+              //     "linear-gradient( 90deg, rgba(255, 255, 255, 1) 0%, rgba(42, 123, 155, 1) 100%)",
+              //   fillColor:
+              //     "linear-gradient( 90deg, rgba(255, 255, 255, 1) 0%, rgba(42, 123, 155, 1) 100%)",
+              fillColor: "#92ebfb",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          } else {
+            console.warn("Leaflet.mask library not loaded. Masking skipped.");
+          }
+        } catch (error) {
+          console.error(
+            "Leaflet.mask library not loaded. Masking skipped.",
+            error
+          );
+        }
+      }
+      // === 4. MAIN EXECUTION ===
+
+      function main() {
+        initializeMap();
+        loadStateBorders();
+        // loadHeatmap();
+        loadLayeredHeatmap();
+        maskMap();
+      }
+
+      main();
+    </script> -->
+
+    <script>
+      const map = L.map("map").setView([23.5, 78.5], 5);
+
+      // === Performance Optimization ===
+      // Use Canvas renderer for better performance if you have many points
+      const myRenderer = L.canvas({ padding: 0.5 });
+
+      function initializeMap() {
+        L.tileLayer("", {
+          attribution: "Plain White Map",
+          maxZoom: 19,
+          minZoom: 0,
+        }).addTo(map);
+
+        const indiaBounds = L.latLngBounds(L.latLng(6.5, 68), L.latLng(37, 98));
+        map.setMaxBounds(indiaBounds);
+        map.options.minZoom = 4;
+      }
+
+      async function loadStateBorders() {
+        try {
+          const response = await fetch("in.geojson");
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+          const geojsonData = await response.json();
+
+          L.geoJson(geojsonData, {
+            style: {
+              fill: false,
+              weight: 1,
+              opacity: 0.5,
+              color: "#999999",
+            },
+            interactive: false,
+          }).addTo(map);
+        } catch (error) {
+          console.error("Error fetching GeoJSON:", error);
+        }
+      }
+
+      // Store layer groups here so we can access them for zooming
+      let layerGroups = {
+        b1: L.layerGroup(),
+        b2: L.layerGroup(),
+        b3: L.layerGroup(),
+        b4: L.layerGroup(),
+        b5: L.layerGroup(),
+      };
+
+      // Configuration for colors and base radius
+      const config = {
+        b1: { radius: 10, color: "#efb100" },
+        b2: { radius: 20, color: "#efb100", blur: 10 },
+        b3: { radius: 35, color: "#efb100", blur: 20 },
+        b4: { radius: 35, color: "#efb100", blur: 20 },
+        b5: { radius: 35, color: "#efb100", blur: 20 },
+      };
+
+      async function loadLayeredHeatmap() {
+        try {
+          // Replace with your actual JSON file path
+          const response = await fetch("demo.json");
+          if (!response.ok) throw new Error("Failed to load buckets");
+
+          const buckets = await response.json();
+
+          // Helper function to create markers for a bucket
+          const createMarkers = (points, conf, group) => {
+            if (!points) return;
+            points.forEach((pt) => {
+              // L.circleMarker takes [lat, lng]
+              // We use the custom renderer for performance
+              const marker = L.circleMarker([pt[0], pt[1]], {
+                renderer: myRenderer,
+                radius: conf.radius, // Initial radius
+                fillColor: conf.color, // Solid color
+                color: conf.color, // Stroke color (same as fill)
+                weight: 0, // No stroke border
+                fillOpacity: 1.0, // 100% Solid
+              });
+              marker.addTo(group);
+            });
+            group.addTo(map);
+          };
+
+          // Create layers for each bucket
+          createMarkers(buckets.bucket1, config.b1, layerGroups.b1);
+          createMarkers(buckets.bucket2, config.b2, layerGroups.b2);
+          createMarkers(buckets.bucket3, config.b3, layerGroups.b3);
+          createMarkers(buckets.bucket4, config.b4, layerGroups.b4);
+          createMarkers(buckets.bucket5, config.b5, layerGroups.b5);
+
+          // === Dynamic Zoom Handler ===
+          function updateMarkerRadius() {
+            const currentZoom = map.getZoom();
+            let scale = 1;
+
+            // Adjust scale based on zoom level (using your logic)
+            if (currentZoom <= 4) scale = 0.2;
+            else if (currentZoom === 5) scale = 0.5;
+            else if (currentZoom <= 7) scale = 0.7;
+            else if (currentZoom <= 9) scale = 0.9;
+            else scale = 1.0;
+
+            // Helper to resize all markers in a group
+            const resizeGroup = (group, baseRadius) => {
+              const newRadius = baseRadius * scale;
+              group.eachLayer((layer) => {
+                layer.setRadius(newRadius);
+              });
+            };
+
+            // Apply resizing
+            resizeGroup(layerGroups.b1, config.b1.radius);
+            resizeGroup(layerGroups.b2, config.b2.radius);
+            resizeGroup(layerGroups.b3, config.b3.radius);
+            resizeGroup(layerGroups.b4, config.b4.radius);
+            resizeGroup(layerGroups.b5, config.b5.radius);
+
+            console.log(`Zoom: ${currentZoom}, Scale: ${scale}`);
+          }
+
+          // Attach listener
+          map.on("zoomend", updateMarkerRadius);
+
+          // Run once immediately
+          updateMarkerRadius();
+        } catch (error) {
+          console.error("Error loading buckets:", error);
+        }
+      }
+
+      async function maskMap() {
+        // Keep your existing mask logic
+        try {
+          const response = await fetch("in.geojson");
+          const geojsonData = await response.json();
+          if (L.mask) {
+            L.mask(geojsonData, {
+              fillColor: "#c0f5fc",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function main() {
+        initializeMap();
+        loadStateBorders();
+        loadLayeredHeatmap();
+        maskMap();
+      }
+
+      main();
+    </script>
+  </body>
+</html>
