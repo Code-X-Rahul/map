@@ -77,6 +77,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-direction: row-reverse;
         padding: 50px;
         color: white;
         font-family: "Poppins", sans-serif;
@@ -86,12 +87,13 @@
       .stats-left {
         align-self: center;
         max-width: 400px;
-        margin-left: 8%;
+        margin-right: 10%;
       }
       .stats-left .label {
-        font-size: 40px;
+        font-size: 32px;
         font-weight: 600;
-        margin-bottom: 10px;
+        /* margin-bottom: 10px; */
+        /* line-height: 1.4; */
       }
       .stats-left .value {
         font-size: 48px;
@@ -101,12 +103,14 @@
 
       /* Right Side: Top 5 List */
       .stats-right {
-        margin-right: 20%;
-        margin-top: 100px;
+        /* margin-left: 5%; */
+        /* margin-top: 100px; */
       }
       .top-title {
-        font-size: 48px;
+        font-size: 40px;
         font-weight: 700;
+        max-width: 400px;
+        text-align: right;
       }
       #top-cities-list {
         list-style: none;
@@ -132,6 +136,15 @@
         filter: brightness(0) invert(1);
         width: 200px;
       }
+      .tagline {
+        font-size: 40px;
+        color: #fddf91;
+        font-style: italic;
+        z-index: 1000;
+        position: fixed;
+        top: 5px;
+        left: 50px;
+      }
     </style>
   </head>
   <body>
@@ -139,13 +152,14 @@
     <div>
       <img src="./logo.webp" alt="habuild" class="logo" />
     </div>
+    <p class="tagline poppins">#ThodaSaPause</p>
     <div id="stats-overlay">
       <div class="stats-left poppins">
-        <div class="label">Total Number of Users Join</div>
         <div id="total-count" class="value">0</div>
+        <div class="label">Total Number of Members Joined</div>
       </div>
       <div class="stats-right poppins">
-        <div class="top-title">Top 5 Cities</div>
+        <div class="top-title">World Meditation Day Special Session</div>
         <ol id="top-cities-list"></ol>
       </div>
     </div>
@@ -240,13 +254,13 @@
             const listContainer = document.getElementById("top-cities-list");
             listContainer.innerHTML = ""; // Clear existing
 
-            data.metadata.top_5_cities.forEach((cityData, index) => {
-              const li = document.createElement("li");
-              li.setAttribute("data-rank", index + 1);
-              // Uses 'city' key from the metadata we generated in Python
-              li.innerText = cityData.city || "Unknown City";
-              listContainer.appendChild(li);
-            });
+            // data.metadata.top_5_cities.forEach((cityData, index) => {
+            //   const li = document.createElement("li");
+            //   li.setAttribute("data-rank", index + 1);
+            //   // Uses 'city' key from the metadata we generated in Python
+            //   li.innerText = cityData.city || "Unknown City";
+            //   listContainer.appendChild(li);
+            // });
           }
           const buckets = data.buckets;
 
