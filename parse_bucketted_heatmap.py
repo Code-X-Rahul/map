@@ -100,6 +100,13 @@ except FileNotFoundError:
 # Calculate Total Events
 total_events = int(df['event_count'].sum())
 
+
+# Identify city column
+city_column = 'city' if 'city' in df.columns else df.columns[0] 
+
+# Calculate Total Cities Count (Unique cities)
+total_cities = int(df[city_column].nunique())
+
 # Get Top 5 Cities (Assumes you have a 'city' or 'city_name' column)
 # If your column name is different, change 'city' below
 city_column = 'city' if 'city' in df.columns else df.columns[0] 
@@ -117,7 +124,8 @@ buckets_config = [
 output_data = {
     "metadata": {
         "total_event_count": total_events,
-        "top_5_cities": top_5_cities
+        "top_5_cities": top_5_cities,
+        "total_cities_count": total_cities,
     },
     "buckets": {}
 }
@@ -140,11 +148,12 @@ for b in buckets_config:
     print(f" - {name} ({r_min}-{r_max}): Found {len(data_list)} cities")
 
 # 4. Save to JSON
-output_filename = 'demo-5.json'
+output_filename = 'demo-6.json'
 with open(output_filename, 'w') as f:
     json.dump(output_data, f, indent=4) # Added indent for readability
 
 print(f"\n--- Statistics ---")
 print(f"Total Events: {total_events}")
 print(f"Top City: {top_5_cities[0][city_column]} ({top_5_cities[0]['event_count']})")
+print(f"Total Cities: {total_cities}") # Added to print output
 print(f"\nDone! Saved output to '{output_filename}'")

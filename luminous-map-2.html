@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>India City User Density Map - Luminous</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <style>
+      *,
+      _*::after,
+      _*::before {
+        box-sizing: border-box;
+      }
+
+      body,
+      html {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        height: 100%;
+      }
+      #map {
+        height: 100svh;
+        width: 100%;
+        background-color: #020514;
+      }
+      .poppins {
+        font-family: "Poppins", sans-serif;
+      }
+      /* === SHARED GLOW BASE === */
+      .glow-base {
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        background-color: transparent;
+        border-radius: 0;
+
+        /* Shared Glow Effect */
+        filter: drop-shadow(0 0 5px rgba(255, 165, 0, 0.8))
+          drop-shadow(0 0 10px rgba(255, 140, 0, 0.6));
+
+        transition: width 0.2s, height 0.2s;
+      }
+
+      /* === SPECIFIC IMAGES === */
+      .icon-small {
+        background-image: url("./small-dot.svg");
+      }
+      .icon-medium {
+        /* Assuming typo fix: medium-dog -> medium-dot */
+        background-image: url("./medium-dot.svg");
+      }
+      .icon-big {
+        background-image: url("./big-dot.svg");
+      }
+
+      /* Stats Overlay Container */
+      #stats-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none; /* Allows clicking map through the text */
+        z-index: 1000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-direction: row-reverse;
+        padding: 50px;
+        color: white;
+        font-family: "Poppins", sans-serif;
+      }
+
+      /* Left Side: Total Count */
+      .stats-left {
+        align-self: center;
+        max-width: 400px;
+        margin-right: 15%;
+      }
+      .label {
+        font-size: 32px;
+        font-weight: 600;
+        /* margin-bottom: 10px; */
+        /* line-height: 1.4; */
+        text-align: center;
+        max-width: 250px;
+      }
+      .value {
+        font-size: 48px;
+        font-weight: 800;
+        color: #fddf91; /* Gold color matching your border */
+        text-align: center;
+      }
+
+      /* Right Side: Top 5 List */
+      .stats-right {
+        margin-left: 5%;
+        /* margin-top: 100px; */
+      }
+      .top-title {
+        font-size: 40px;
+        font-weight: 700;
+        max-width: 400px;
+        text-align: right;
+      }
+      #top-cities-list {
+        list-style: none;
+        padding: 0;
+      }
+      #top-cities-list li {
+        font-size: 32px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+      }
+      #top-cities-list li::before {
+        content: attr(data-rank) ". ";
+        color: #fddf91;
+        font-weight: bold;
+        margin-right: 10px;
+      }
+      .logo {
+        position: fixed;
+        top: 50px;
+        right: 50px;
+        z-index: 1000;
+        filter: brightness(0) invert(1);
+        width: 200px;
+      }
+      .tagline {
+        font-size: 40px;
+        color: #fddf91;
+        font-style: italic;
+        z-index: 1000;
+        position: fixed;
+        top: 5px;
+        left: 50px;
+      }
+
+      .sub-tag {
+        font-size: 18px;
+        color: white;
+        font-style: italic;
+        z-index: 1000;
+        position: fixed;
+        top: 80px;
+        left: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <div>
+      <img src="./logo.webp" alt="habuild" class="logo" />
+    </div>
+    <p class="tagline poppins">#ThodaSaPause</p>
+    <p class="sub-tag poppins">World Meditation Day Special Session</p>
+    <div id="stats-overlay">
+      <div class="stats-left poppins">
+        <div id="total-count" class="value">0</div>
+        <!-- <div class="label">Total Members Joined</div> -->
+        <div class="label">People Taking a Pause</div>
+      </div>
+      <div class="stats-right poppins">
+        <div id="total-city-count" class="value">0</div>
+        <!-- <div class="label">Total Cities Count</div> -->
+        <div class="label">Cities Pausing Together</div>
+        <!-- <div class="top-title">World Meditation Day Special Session</div> -->
+      </div>
+    </div>
+    <!-- <ol id="top-cities-list"></ol> -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+
+    <script type="text/javascript" src="./leaflet.mask.js"></script>
+
+    <script>
+      /**
+       * Transforms raw API data into the bucketed format for the map.
+       * @param {Object} apiResponse - The raw data from the API
+       * @returns {Object} Formatted data with metadata and intensity buckets
+       */
+      function transformApiData(apiResponse) {
+        const rawData = apiResponse.data || [];
+
+        // 1. Metadata Calculations
+        const totalEvents = rawData.reduce(
+          (sum, item) => sum + (item.session_hits || 0),
+          0
+        );
+        const totalCities = new Set(rawData.map((item) => item.city)).size;
+
+        // Sort and get Top 5 Cities
+        const top5Cities = [...rawData]
+          .sort((a, b) => b.session_hits - a.session_hits)
+          .slice(0, 5)
+          .map((item) => ({
+            city: item.city,
+            event_count: item.session_hits,
+          }));
+
+        // 2. Define Buckets (Matching your Python config)
+        const bucketsConfig = [
+          { name: "bucket1", min: 1, max: 10, intensity: 0.6 },
+          { name: "bucket2", min: 11, max: 50, intensity: 0.8 },
+          { name: "bucket3", min: 51, max: Infinity, intensity: 1.0 },
+        ];
+
+        const buckets = {
+          bucket1: [],
+          bucket2: [],
+          bucket3: [],
+        };
+
+        // 3. Process records into buckets
+        rawData.forEach((row) => {
+          const hits = row.session_hits;
+          const lat = row.latitude;
+          const lng = row.longitude;
+
+          // Skip if coordinates are missing
+          if (lat === null || lng === null) return;
+
+          // Find appropriate bucket
+          const targetBucket = bucketsConfig.find(
+            (b) => hits >= b.min && hits <= b.max
+          );
+
+          if (targetBucket) {
+            // Format: [lat, lng, intensity]
+            buckets[targetBucket.name].push([lat, lng, targetBucket.intensity]);
+          }
+        });
+
+        return {
+          metadata: {
+            total_event_count: totalEvents,
+            total_cities_count: totalCities,
+            top_5_cities: top5Cities,
+          },
+          buckets: buckets,
+        };
+      }
+
+      const map = L.map("map", {
+        zoomControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+        boxZoom: false,
+        dragging: false,
+        keyboard: false,
+      }).setView([23.5, 78.5], 5);
+
+      function initializeMap() {
+        L.tileLayer("", {
+          attribution: "Plain White Map",
+          maxZoom: 19,
+          minZoom: 0,
+        }).addTo(map);
+        // 2. Define the bounds for India tightly
+        const indiaBounds = L.latLngBounds(
+          L.latLng(6.5, 68), // Southwest
+          L.latLng(37.5, 98) // Northeast
+        );
+
+        // 3. Fit the map to these bounds so it fills the height
+        map.fitBounds(indiaBounds, {
+          padding: [0, 0], // Removes padding to ensure top-to-bottom fit
+        });
+
+        // 4. Lock the zoom level to whatever fitBounds calculated
+        const currentZoom = map.getZoom();
+        map.options.minZoom = currentZoom;
+        map.options.maxZoom = currentZoom;
+      }
+
+      async function loadStateBorders() {
+        try {
+          const response = await fetch("in.geojson");
+          if (!response.ok) return;
+          const geojsonData = await response.json();
+
+          L.geoJson(geojsonData, {
+            style: {
+              fill: false,
+              weight: 1,
+              opacity: 1,
+              color: "#FDDF91",
+            },
+            interactive: false,
+          }).addTo(map);
+        } catch (error) {
+          console.error("Error fetching GeoJSON:", error);
+        }
+      }
+
+      let layerGroups = {
+        b1: L.layerGroup(),
+        b2: L.layerGroup(),
+        b3: L.layerGroup(),
+      };
+
+      // === UPDATED CONFIGURATION ===
+      // Added 'cssClass' to map buckets to specific SVG files
+      const config = {
+        b1: { radius: 10, cssClass: "icon-small" },
+        b2: { radius: 15, cssClass: "icon-medium" },
+        b3: { radius: 25, cssClass: "icon-big" },
+      };
+
+      async function loadLayeredHeatmap() {
+        try {
+          // const response = await fetch("demo-6.json");
+          const response = await fetch("map-api-response.json");
+          if (!response.ok) throw new Error("Failed to load buckets");
+
+          const reponseData = await response.json();
+          const data = transformApiData(reponseData);
+
+          if (data.metadata) {
+            // Format number with commas (e.g., 123,456)
+            document.getElementById("total-count").innerText =
+              data.metadata.total_event_count.toLocaleString("en-IN");
+            console.log(data.metadata.total_cities_count);
+
+            document.getElementById("total-city-count").innerText =
+              data.metadata.total_cities_count.toLocaleString("en-IN");
+
+            // const listContainer = document.getElementById("top-cities-list");
+            // listContainer.innerHTML = ""; // Clear existing
+
+            // data.metadata.top_5_cities.forEach((cityData, index) => {
+            //   const li = document.createElement("li");
+            //   li.setAttribute("data-rank", index + 1);
+            //   // Uses 'city' key from the metadata we generated in Python
+            //   li.innerText = cityData.city || "Unknown City";
+            //   listContainer.appendChild(li);
+            // });
+          }
+          const buckets = data.buckets;
+
+          const createMarkers = (points, conf, group) => {
+            if (!points) return;
+            const size = conf.radius * 2;
+
+            points.forEach((pt) => {
+              // Combine base class with specific icon class
+              const className = `glow-base ${conf.cssClass}`;
+
+              const icon = L.divIcon({
+                className: className,
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+                html: "",
+              });
+
+              const marker = L.marker([pt[0], pt[1]], {
+                icon: icon,
+              });
+
+              marker.addTo(group);
+            });
+            group.addTo(map);
+          };
+
+          createMarkers(buckets.bucket1, config.b1, layerGroups.b1);
+          createMarkers(buckets.bucket2, config.b2, layerGroups.b2);
+          createMarkers(buckets.bucket3, config.b3, layerGroups.b3);
+
+          // === UPDATED ZOOM HANDLER ===
+          function updateMarkerRadius() {
+            const currentZoom = map.getZoom();
+            let scale = 1;
+
+            if (currentZoom <= 4) scale = 0.2;
+            else if (currentZoom === 5) scale = 0.5;
+            else if (currentZoom <= 7) scale = 0.7;
+            else if (currentZoom <= 9) scale = 0.9;
+            else scale = 1.0;
+
+            // Updated to accept the CSS class so we don't lose the image on resize
+            const resizeGroup = (group, baseRadius, cssClass) => {
+              const newSize = baseRadius * 2 * scale;
+              const newAnchor = newSize / 2;
+              const fullClassName = `glow-base ${cssClass}`;
+
+              group.eachLayer((layer) => {
+                const currentIcon = layer.getIcon();
+                // Only update if size changed
+                if (currentIcon.options.iconSize[0] !== newSize) {
+                  layer.setIcon(
+                    L.divIcon({
+                      className: fullClassName,
+                      iconSize: [newSize, newSize],
+                      iconAnchor: [newAnchor, newAnchor],
+                    })
+                  );
+                }
+              });
+            };
+
+            // Pass the specific CSS class for each group
+            resizeGroup(layerGroups.b1, config.b1.radius, config.b1.cssClass);
+            resizeGroup(layerGroups.b2, config.b2.radius, config.b2.cssClass);
+            resizeGroup(layerGroups.b3, config.b3.radius, config.b3.cssClass);
+
+            console.log(`Zoom: ${currentZoom}, Scale: ${scale}`);
+          }
+
+          map.on("zoomend", updateMarkerRadius);
+          updateMarkerRadius();
+        } catch (error) {
+          console.error("Error loading buckets:", error);
+        }
+      }
+
+      async function maskMap() {
+        try {
+          const response = await fetch("in.geojson");
+          const geojsonData = await response.json();
+          if (L.mask) {
+            L.mask(geojsonData, {
+              // fillColor: "#000413",
+              fillColor: "#020514",
+              fillOpacity: 1,
+              stroke: false,
+              interactive: false,
+              fitBounds: false,
+              restrictBounds: false,
+            }).addTo(map);
+          }
+        } catch (e) {
+          // silent fail
+        }
+      }
+
+      function main() {
+        initializeMap();
+        loadStateBorders();
+        loadLayeredHeatmap();
+        maskMap();
+      }
+
+      main();
+    </script>
+  </body>
+</html>
