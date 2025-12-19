@@ -55,14 +55,14 @@
 
       /* === SPECIFIC IMAGES === */
       .icon-small {
-        background-image: url("./small-dot.svg");
+        background-image: url("./assets/small-dot.svg");
       }
       .icon-medium {
         /* Assuming typo fix: medium-dog -> medium-dot */
-        background-image: url("./medium-dot.svg");
+        background-image: url("./assets/medium-dot.svg");
       }
       .icon-big {
-        background-image: url("./big-dot.svg");
+        background-image: url("./assets/big-dot.svg");
       }
 
       /* Stats Overlay Container */
@@ -163,7 +163,7 @@
   <body>
     <div id="map"></div>
     <div>
-      <img src="./logo.webp" alt="habuild" class="logo" />
+      <img src="./assets/logo.webp" alt="habuild" class="logo" />
     </div>
     <p class="tagline poppins">#ThodaSaPause</p>
     <p class="sub-tag poppins">World Meditation Day Special Session</p>
@@ -187,14 +187,9 @@
       crossorigin=""
     ></script>
 
-    <script type="text/javascript" src="./leaflet.mask.js"></script>
+    <script type="text/javascript" src="./plugins/leaflet.mask.js"></script>
 
     <script>
-      /**
-       * Transforms raw API data into the bucketed format for the map.
-       * @param {Object} apiResponse - The raw data from the API
-       * @returns {Object} Formatted data with metadata and intensity buckets
-       */
       function transformApiData(apiResponse) {
         const rawData = apiResponse.data || [];
 
@@ -341,17 +336,6 @@
 
             document.getElementById("total-city-count").innerText =
               data.metadata.total_cities_count.toLocaleString("en-IN");
-
-            // const listContainer = document.getElementById("top-cities-list");
-            // listContainer.innerHTML = ""; // Clear existing
-
-            // data.metadata.top_5_cities.forEach((cityData, index) => {
-            //   const li = document.createElement("li");
-            //   li.setAttribute("data-rank", index + 1);
-            //   // Uses 'city' key from the metadata we generated in Python
-            //   li.innerText = cityData.city || "Unknown City";
-            //   listContainer.appendChild(li);
-            // });
           }
           const buckets = data.buckets;
 
